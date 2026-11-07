@@ -1,0 +1,13 @@
+{
+  "target": {
+    "ip": "play.your-target-server.com",
+    "port": null
+  },
+  "webhookUrl": "YOUR_DISCORD_WEBHOOK_URL_HERE",
+  "auth": {
+    "password": "SpikeSecurePassword123"
+  },
+  "spamMessages": [
+    "SPIKE.LOL ON TOP! THIS SERVER RAID BY SPIKE.LOL FREE TOOLS AND MORE RAID SYSTEM BEST JOIN https://discord.gg/pT8RGGvtZg"
+  ]
+}
