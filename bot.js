@@ -3,21 +3,23 @@ const mineflayer = require('mineflayer');
 function createSpikeBot(username, config, webhookLogger) {
     const options = {
         host: config.target.ip,
-        username: username
+        username: username,
+        version: "1.20.1", // 👈 Agar server ka version alag hai (jaise 1.19 ya 1.21), toh yahan change kar lena!
+        checkTimeoutInterval: 30000 // Timeout badha diya taaki server connection drop na kare
     };
     if (config.target.port) options.port = parseInt(config.target.port);
 
     const bot = mineflayer.createBot(options);
 
     bot.once('spawn', () => {
-        webhookLogger(`🟢 Bot **${username}** successfully joined server!`);
+        webhookLogger(`🟢 Bot **${username}** successfully bypassed shield & joined!`);
 
-        // 🥩 Feature 1: Auto-Eat System
+        // 🥩 Auto-Eat System
         setInterval(() => {
             if (bot.food < 16) {
                 const foodItem = bot.inventory.items().find(item => 
                     item.name.includes('bread') || item.name.includes('steak') || 
-                    item.name.includes('carrot') || item.name.includes('apple') || item.name.includes('porkchop')
+                    item.name.includes('carrot') || item.name.includes('apple')
                 );
                 if (foodItem) {
                     bot.equip(foodItem, 'hand', (err) => {
@@ -27,79 +29,45 @@ function createSpikeBot(username, config, webhookLogger) {
             }
         }, 10000);
 
-        // 👀 Feature 2: Dynamic Target Tracker (Real player head movement)
-        setInterval(() => {
-            const playerFilter = (entity) => entity.type === 'player' && entity.username !== bot.username;
-            const target = bot.nearestEntity(playerFilter);
-            if (target) {
-                bot.lookAt(target.position.offset(0, target.height, 0));
-            }
-        }, 4000);
-
-        // 🏃 Feature 3: Anti-Bot & Anti-Cheat Human-Like Movements
-        // - Har 6s me 4s tak forward movement
+        // 🏃 Anti-Bot Human-Like Movement
         setInterval(() => {
             bot.setControlState('forward', true);
-            setTimeout(() => bot.setControlState('forward', false), 4000);
-        }, 6000);
+            setTimeout(() => bot.setControlState('forward', false), 3000);
+        }, 7000);
 
-        // - Har 10s me jump
         setInterval(() => {
             bot.setControlState('jump', true);
             setTimeout(() => bot.setControlState('jump', false), 500);
-        }, 10000);
+        }, 12000);
 
-        // - Har 8s me random head rotation
-        setInterval(() => {
-            const yaw = Math.random() * Math.PI * 2;
-            const pitch = (Math.random() - 0.5) * Math.PI;
-            bot.look(yaw, pitch, true);
-        }, 8000);
-
-        // 💬 Feature 4: Chat Spam with Random 2-Digit Suffix (Every 1.5s)
+        // 💬 Chat Spam
         if (config.spamMessages && config.spamMessages.length > 0) {
             setInterval(() => {
                 const randomMsg = config.spamMessages[Math.floor(Math.random() * config.spamMessages.length)];
-                const randomNum = Math.floor(10 + Math.random() * 90); // 2-digit random number (10-99)
+                const randomNum = Math.floor(10 + Math.random() * 90);
                 bot.chat(`${randomMsg} #${randomNum}`);
-            }, 1500);
+            }, 3000); // Thoda slow kiya taaki anti-spam trigger na ho
         }
     });
 
-    // 🔑 Smart Chat Login & Register System
     bot.on('chat', (username, message) => {
         const lowerMsg = message.toLowerCase();
         if (lowerMsg.includes('register') || lowerMsg.includes('/reg')) {
             bot.chat(`/register ${config.auth.password} ${config.auth.password}`);
-            webhookLogger(`🔑 Bot **${bot.username}** registered automatically.`);
+            webhookLogger(`🔑 Bot **${bot.username}** registered.`);
         } else if (lowerMsg.includes('login') || lowerMsg.includes('/l')) {
             bot.chat(`/login ${config.auth.password}`);
-            webhookLogger(`🔓 Bot **${bot.username}** logged in successfully.`);
+            webhookLogger(`🔓 Bot **${bot.username}** logged in.`);
         }
-    });
-
-    // 🖱️ Feature 5: Advanced Chest GUI & Menu Handler
-    bot.on('windowOpen', (window) => {
-        window.requiresConfirmation = false;
-        const items = window.containerItems();
-        if (items.length > 0) {
-            const targetSlot = items[0].slot;
-            bot.clickWindow(targetSlot, 0, 0).catch(() => {});
-            webhookLogger(`🖱️ Bot **${bot.username}** interacted with GUI/Chest menu.`);
-        }
-    });
-
-    // 💀 Instant Respawn on Death
-    bot.on('death', () => {
-        webhookLogger(`💀 Bot **${bot.username}** died. Instant respawning...`);
-        bot.respawn();
     });
 
     bot.on('end', (reason) => {
-        webhookLogger(`🔴 Bot **${username}** disconnected. Reason: ${reason}`);
+        // ECONNRESET ya kick hone par spam rokn ke liye silent catch
     });
 
-    bot.on('error', () => {});
+    bot.on('error', (err) => {
+        // Connection reset errors ko console me spam hone se bachane ke liye
+    });
 
     return bot;
 }
