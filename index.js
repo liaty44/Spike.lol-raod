@@ -2,8 +2,8 @@ const mineflayer = require('mineflayer');
 const axios = require('axios');
 
 // ================= CONFIGURATION (YAHAN APNI DETAILS DAAL DE) =================
-const SERVER_HOST = "craftysmpseason2.pixelforge.gg"; // Tera server IP ya domain
-const SERVER_PORT = 25565; // Port number (agar alag ho toh change kar liyo)
+const SERVER_HOST = "india-02.pingless.org"; // Tera server IP ya domain
+const SERVER_PORT = 25859; // Port number (agar alag ho toh change kar liyo)
 const BASE_USERNAME = "SpikeBot"; // Bot ka base name
 const WEBHOOK_URL = "https://discord.com/api/webhooks/1568652937394389053/0zx6dOuA68vr9X-q9ZNid0CXqm7SL55BTSnVMkw4OstMNnKMwktiuWqZ-sepoIysKITA"; // Discord webhook (optional)
 const SPAM_MESSAGE = "Spike.lol On TOP! This Server Raid by spike.lol best tools join https://discord.gg/pT8RGGvtZg"; // Tera spam message
