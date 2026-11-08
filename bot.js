@@ -10,7 +10,7 @@ function createSpikeBot(username, config, webhookLogger) {
     const bot = mineflayer.createBot(options);
 
     bot.once('spawn', () => {
-        webhookLogger(`🟢 Bot **${username}** successfully joined the server!`);
+        webhookLogger(`🟢 Bot **${username}** successfully joined server!`);
 
         // 🥩 Feature 1: Auto-Eat System
         setInterval(() => {
